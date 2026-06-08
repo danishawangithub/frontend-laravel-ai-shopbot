@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import {
+  BUSINESS_REPORTS_SUGGESTED_QUESTIONS,
   PRODUCT_SUGGESTED_QUESTIONS,
   QUICK_SUGGESTED_QUESTIONS,
   REPORTS_SUGGESTED_QUESTIONS,
@@ -184,6 +185,12 @@ export default function AiAgentChat() {
       <SuggestedButtonGroup
         title="Products"
         items={PRODUCT_SUGGESTED_QUESTIONS}
+        loading={loading}
+        onSelect={handleSuggestedClick}
+      />
+      <SuggestedButtonGroup
+        title="Business Reports"
+        items={BUSINESS_REPORTS_SUGGESTED_QUESTIONS}
         loading={loading}
         onSelect={handleSuggestedClick}
       />

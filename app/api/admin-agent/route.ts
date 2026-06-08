@@ -53,6 +53,13 @@ const INTENT_LABELS: Record<AgentIntent, string> = {
   product_search: 'Product search',
   product_detail: 'Product detail',
   product_sales_report: 'Product sales report',
+  orders_by_city_report: 'Orders by city report',
+  order_status_summary: 'Order status summary',
+  payment_method_summary: 'Payment method summary',
+  average_order_value: 'Average order value',
+  sales_comparison: 'Sales comparison',
+  products_not_selling: 'Products not selling',
+  low_stock_high_sales: 'Low stock high sales (restock priority)',
 }
 
 const GROQ_NLP_ROUTER_SYSTEM_PROMPT = `You are an NLP intent router for a Laravel + Next.js Pakistani suits e-commerce admin chatbot.
@@ -91,6 +98,13 @@ latest_customers
 product_search
 product_detail
 product_sales_report
+orders_by_city_report
+order_status_summary
+payment_method_summary
+average_order_value
+sales_comparison
+products_not_selling
+low_stock_high_sales
 unsupported
 
 Routing rules:
@@ -100,7 +114,14 @@ Routing rules:
 - If message says "show product 5" or "product id 5", use product_detail.
 - "Top customer" must be top_spending_customers (customer analytics).
 - "Top product" or "best selling products" must be product_sales_report (not customer analytics).
-- low_stock_products is for stock alerts only, not product search or sales ranking.
+- low_stock_products is for simple low-stock alerts (show low stock products).
+- low_stock_high_sales is for restock priority / urgent restock / low stock with high sales.
+- products_not_selling is for zero-sales or not-selling products (not product_sales_report).
+- City-wise orders, orders by city, kis city se zyada orders -> orders_by_city_report.
+- Order status breakdown, pending/cancelled summary -> order_status_summary.
+- COD, payment method, online vs COD -> payment_method_summary.
+- AOV, average order value -> average_order_value.
+- Compare week/month sales periods -> sales_comparison with currentPeriod and previousPeriod.
 
 Entities:
 {
@@ -111,7 +132,9 @@ Entities:
 "phone": null,
 "period": null,
 "productId": null,
-"productQuery": null
+"productQuery": null,
+"currentPeriod": null,
+"previousPeriod": null
 }
 
 Supported period values:
@@ -120,6 +143,10 @@ week
 last_week
 month
 last_month
+
+Supported comparison values:
+currentPeriod: today|week|month
+previousPeriod: yesterday|last_week|last_month
 
 Return exactly this JSON shape:
 {
@@ -133,7 +160,9 @@ Return exactly this JSON shape:
 "phone": null,
 "period": null,
 "productId": null,
-"productQuery": null
+"productQuery": null,
+"currentPeriod": null,
+"previousPeriod": null
 }
 }
 
@@ -355,6 +384,161 @@ Intent examples:
 "period": "last_month"
 }
 }
+
+"Which city has most orders?" ->
+{
+"intent": "orders_by_city_report",
+"confidence": 0.95,
+"entities": {
+"period": "month"
+}
+}
+
+"Show city wise orders this month" ->
+{
+"intent": "orders_by_city_report",
+"confidence": 0.95,
+"entities": {
+"period": "month"
+}
+}
+
+"Order status summary this month" ->
+{
+"intent": "order_status_summary",
+"confidence": 0.95,
+"entities": {
+"period": "month"
+}
+}
+
+"How many COD orders this month?" ->
+{
+"intent": "payment_method_summary",
+"confidence": 0.9,
+"entities": {
+"period": "month"
+}
+}
+
+"Payment method summary last month" ->
+{
+"intent": "payment_method_summary",
+"confidence": 0.95,
+"entities": {
+"period": "last_month"
+}
+}
+
+"What is average order value this month?" ->
+{
+"intent": "average_order_value",
+"confidence": 0.95,
+"entities": {
+"period": "month"
+}
+}
+
+"Compare this week and last week sales" ->
+{
+"intent": "sales_comparison",
+"confidence": 0.95,
+"entities": {
+"currentPeriod": "week",
+"previousPeriod": "last_week"
+}
+}
+
+"Compare this month and last month" ->
+{
+"intent": "sales_comparison",
+"confidence": 0.95,
+"entities": {
+"currentPeriod": "month",
+"previousPeriod": "last_month"
+}
+}
+
+"Which products are not selling?" ->
+{
+"intent": "products_not_selling",
+"confidence": 0.9,
+"entities": {
+"period": "month"
+}
+}
+
+"Show products not selling this month" ->
+{
+"intent": "products_not_selling",
+"confidence": 0.95,
+"entities": {
+"period": "month"
+}
+}
+
+"Which products need restock urgently?" ->
+{
+"intent": "low_stock_high_sales",
+"confidence": 0.95,
+"entities": {
+"period": "month"
+}
+}
+
+"Show low stock high sales products" ->
+{
+"intent": "low_stock_high_sales",
+"confidence": 0.95,
+"entities": {
+"period": "month"
+}
+}
+
+"kis city se zyada orders hain?" ->
+{
+"intent": "orders_by_city_report",
+"confidence": 0.9,
+"entities": {
+"period": "month"
+}
+}
+
+"iss month average order value kya hai?" ->
+{
+"intent": "average_order_value",
+"confidence": 0.9,
+"entities": {
+"period": "month"
+}
+}
+
+"pichlay month ka status summary dikhao" ->
+{
+"intent": "order_status_summary",
+"confidence": 0.9,
+"entities": {
+"period": "last_month"
+}
+}
+
+"kaun se products nahi bik rahe?" ->
+{
+"intent": "products_not_selling",
+"confidence": 0.9,
+"entities": {
+"period": "month"
+}
+}
+
+"kaun se products restock karne chahiye?" ->
+{
+"intent": "low_stock_high_sales",
+"confidence": 0.9,
+"entities": {
+"period": "month"
+}
+}
 `
 
 type NlpRouterEntities = {
@@ -366,6 +550,8 @@ type NlpRouterEntities = {
   period: string | null
   productId: string | null
   productQuery: string | null
+  currentPeriod: string | null
+  previousPeriod: string | null
 }
 
 type GroqNlpRouterOutput = {
@@ -393,10 +579,19 @@ const SUPPORTED_NLP_INTENTS: (AgentIntent | 'unsupported')[] = [
   'product_search',
   'product_detail',
   'product_sales_report',
+  'orders_by_city_report',
+  'order_status_summary',
+  'payment_method_summary',
+  'average_order_value',
+  'sales_comparison',
+  'products_not_selling',
+  'low_stock_high_sales',
   'unsupported',
 ]
 
 const PERIOD_VALUES = new Set(['today', 'week', 'last_week', 'month', 'last_month'])
+const CURRENT_PERIOD_VALUES = new Set(['today', 'week', 'month'])
+const PREVIOUS_PERIOD_VALUES = new Set(['yesterday', 'last_week', 'last_month'])
 
 function safeTrim(v: unknown): string | null {
   if (typeof v !== 'string') return null
@@ -431,7 +626,21 @@ function normalizeNlpEntities(raw: Partial<NlpRouterEntities> | undefined): NlpR
     period: safeTrim(raw?.period),
     productId: safeTrim(raw?.productId),
     productQuery: safeTrim(raw?.productQuery),
+    currentPeriod: safeTrim(raw?.currentPeriod),
+    previousPeriod: safeTrim(raw?.previousPeriod),
   }
+}
+
+function resolveReportPeriod(period: string | null, fallback = 'month'): string {
+  return period && PERIOD_VALUES.has(period) ? period : fallback
+}
+
+function resolveCurrentPeriod(period: string | null): string {
+  return period && CURRENT_PERIOD_VALUES.has(period) ? period : 'week'
+}
+
+function resolvePreviousPeriod(period: string | null): string {
+  return period && PREVIOUS_PERIOD_VALUES.has(period) ? period : 'last_week'
 }
 
 function tryParseJsonObject(raw: string): unknown {
@@ -453,11 +662,16 @@ function isGroqNlpRouterOutput(value: unknown): value is GroqNlpRouterOutput {
 
 function buildEndpointDebugFromDetected(detected: DetectedIntent): string | null {
   if (detected.endpoints?.length) return detected.endpoints.join(' | ')
-  if (detected.endpoint) {
-    if (!detected.params?.period) return detected.endpoint
-    return `${detected.endpoint}?period=${encodeURIComponent(String(detected.params.period))}`
+  if (!detected.endpoint) return null
+
+  const params = detected.params ?? {}
+  const qs = new URLSearchParams()
+  for (const [key, value] of Object.entries(params)) {
+    if (key === 'id' && detected.endpoint.includes('{id}')) continue
+    qs.set(key, String(value))
   }
-  return null
+  const query = qs.toString()
+  return query ? `${detected.endpoint}?${query}` : detected.endpoint
 }
 
 export function buildLaravelEndpointFromNlp(nlp: GroqNlpRouterOutput):
@@ -667,8 +881,7 @@ export function buildLaravelEndpointFromNlp(nlp: GroqNlpRouterOutput):
       }
     }
     case 'product_sales_report': {
-      const period = safeTrim(entities.period)
-      const resolvedPeriod = period && PERIOD_VALUES.has(period) ? period : 'month'
+      const resolvedPeriod = resolveReportPeriod(safeTrim(entities.period))
       return {
         kind: 'detected',
         detected: {
@@ -677,6 +890,91 @@ export function buildLaravelEndpointFromNlp(nlp: GroqNlpRouterOutput):
           params: { period: resolvedPeriod },
         },
         endpoint: `/agent/products/sales?period=${encodeURIComponent(resolvedPeriod)}`,
+      }
+    }
+    case 'orders_by_city_report': {
+      const period = resolveReportPeriod(safeTrim(entities.period))
+      return {
+        kind: 'detected',
+        detected: {
+          intent: 'orders_by_city_report',
+          endpoint: '/agent/reports/orders-by-city',
+          params: { period },
+        },
+        endpoint: `/agent/reports/orders-by-city?period=${encodeURIComponent(period)}`,
+      }
+    }
+    case 'order_status_summary': {
+      const period = resolveReportPeriod(safeTrim(entities.period))
+      return {
+        kind: 'detected',
+        detected: {
+          intent: 'order_status_summary',
+          endpoint: '/agent/reports/order-status-summary',
+          params: { period },
+        },
+        endpoint: `/agent/reports/order-status-summary?period=${encodeURIComponent(period)}`,
+      }
+    }
+    case 'payment_method_summary': {
+      const period = resolveReportPeriod(safeTrim(entities.period))
+      return {
+        kind: 'detected',
+        detected: {
+          intent: 'payment_method_summary',
+          endpoint: '/agent/reports/payment-method-summary',
+          params: { period },
+        },
+        endpoint: `/agent/reports/payment-method-summary?period=${encodeURIComponent(period)}`,
+      }
+    }
+    case 'average_order_value': {
+      const period = resolveReportPeriod(safeTrim(entities.period))
+      return {
+        kind: 'detected',
+        detected: {
+          intent: 'average_order_value',
+          endpoint: '/agent/reports/average-order-value',
+          params: { period },
+        },
+        endpoint: `/agent/reports/average-order-value?period=${encodeURIComponent(period)}`,
+      }
+    }
+    case 'sales_comparison': {
+      const current = resolveCurrentPeriod(safeTrim(entities.currentPeriod))
+      const previous = resolvePreviousPeriod(safeTrim(entities.previousPeriod))
+      return {
+        kind: 'detected',
+        detected: {
+          intent: 'sales_comparison',
+          endpoint: '/agent/reports/sales-comparison',
+          params: { current, previous },
+        },
+        endpoint: `/agent/reports/sales-comparison?current=${encodeURIComponent(current)}&previous=${encodeURIComponent(previous)}`,
+      }
+    }
+    case 'products_not_selling': {
+      const period = resolveReportPeriod(safeTrim(entities.period))
+      return {
+        kind: 'detected',
+        detected: {
+          intent: 'products_not_selling',
+          endpoint: '/agent/reports/products-not-selling',
+          params: { period },
+        },
+        endpoint: `/agent/reports/products-not-selling?period=${encodeURIComponent(period)}`,
+      }
+    }
+    case 'low_stock_high_sales': {
+      const period = resolveReportPeriod(safeTrim(entities.period))
+      return {
+        kind: 'detected',
+        detected: {
+          intent: 'low_stock_high_sales',
+          endpoint: '/agent/reports/low-stock-high-sales',
+          params: { period },
+        },
+        endpoint: `/agent/reports/low-stock-high-sales?period=${encodeURIComponent(period)}`,
       }
     }
     default:

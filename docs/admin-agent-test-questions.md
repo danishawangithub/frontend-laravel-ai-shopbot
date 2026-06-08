@@ -77,7 +77,32 @@ This checklist is used to test the AI Admin Agent after changes. Each question s
 
 ---
 
-## 7. Store Summary
+## 7. Business Intelligence Reports
+
+| # | Question | Expected intent | Expected endpoint or flow | Status |
+|---|----------|-----------------|---------------------------|--------|
+| 29 | Which city has most orders this month? | `orders_by_city_report` | `/agent/reports/orders-by-city?period=month` | [ ] |
+| 30 | Show order status summary this month | `order_status_summary` | `/agent/reports/order-status-summary?period=month` | [ ] |
+| 31 | Show payment method summary this month | `payment_method_summary` | `/agent/reports/payment-method-summary?period=month` | [ ] |
+| 32 | What is average order value this month? | `average_order_value` | `/agent/reports/average-order-value?period=month` | [ ] |
+| 33 | Compare this week and last week sales | `sales_comparison` | `/agent/reports/sales-comparison?current=week&previous=last_week` | [ ] |
+| 34 | Which products are not selling this month? | `products_not_selling` | `/agent/reports/products-not-selling?period=month` | [ ] |
+| 35 | Which products need restock urgently? | `low_stock_high_sales` | `/agent/reports/low-stock-high-sales?period=month` | [ ] |
+| 36 | kaun se products nahi bik rahe? | `products_not_selling` | `/agent/reports/products-not-selling?period=month` | [ ] |
+| 37 | kis city se zyada orders hain? | `orders_by_city_report` | `/agent/reports/orders-by-city?period=month` | [ ] |
+
+**Regression guard (must not misroute):**
+
+| # | Question | Expected intent | Must NOT be | Status |
+|---|----------|-----------------|-------------|--------|
+| 38 | Top customer | `top_spending_customers` | `orders_by_city_report` | [ ] |
+| 39 | Top product | `product_sales_report` | `products_not_selling` | [ ] |
+| 40 | Show low stock products | `low_stock_products` | `low_stock_high_sales` | [ ] |
+| 41 | Which products need restock urgently? | `low_stock_high_sales` | `low_stock_products` | [ ] |
+
+---
+
+## 8. Store Summary
 
 | # | Question | Expected intent | Expected endpoint or flow | Status |
 |---|----------|-----------------|---------------------------|--------|
@@ -85,7 +110,7 @@ This checklist is used to test the AI Admin Agent after changes. Each question s
 
 ---
 
-## 8. Roman Urdu / Typo Tests
+## 9. Roman Urdu / Typo Tests
 
 | # | Question | Expected intent | Expected endpoint or flow | Status |
 |---|----------|-----------------|---------------------------|--------|
@@ -95,7 +120,7 @@ This checklist is used to test the AI Admin Agent after changes. Each question s
 
 ---
 
-## 9. Debug Checklist
+## 10. Debug Checklist
 
 Run this while testing each question (development mode, terminal where `npm run dev` is running):
 
@@ -124,7 +149,7 @@ Run this while testing each question (development mode, terminal where `npm run 
 
 ---
 
-## 10. Environment Checklist
+## 11. Environment Checklist
 
 Complete before starting a regression run:
 
@@ -156,7 +181,7 @@ GROQ_MODEL=llama-3.1-8b-instant
 
 1. Open the AI Admin Agent page (`/admin/ai-agent`).
 2. Complete the **Environment Checklist** above.
-3. Ask each question one by one (sections 1–8).
+3. Ask each question one by one (sections 1–9).
 4. Check terminal debug output for each question.
 5. Mark the **Status** checkbox when passed.
 6. If any question fails, record:
@@ -191,6 +216,13 @@ GROQ_MODEL=llama-3.1-8b-instant
 | `product_search` | `GET /agent/products/search?query=` |
 | `product_detail` | `GET /agent/products/{productId}` |
 | `product_sales_report` | `GET /agent/products/sales?period=` |
+| `orders_by_city_report` | `GET /agent/reports/orders-by-city?period=` |
+| `order_status_summary` | `GET /agent/reports/order-status-summary?period=` |
+| `payment_method_summary` | `GET /agent/reports/payment-method-summary?period=` |
+| `average_order_value` | `GET /agent/reports/average-order-value?period=` |
+| `sales_comparison` | `GET /agent/reports/sales-comparison?current=&previous=` |
+| `products_not_selling` | `GET /agent/reports/products-not-selling?period=` |
+| `low_stock_high_sales` | `GET /agent/reports/low-stock-high-sales?period=` |
 | `top_spending_customers` | `GET /agent/customers/top-spending` |
 | `repeated_customers` | `GET /agent/customers/repeated` |
 | `customer_sales_count` | `GET /agent/customers/sales-count` |

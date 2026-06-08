@@ -17,6 +17,13 @@ export type AgentIntent =
   | 'product_search'
   | 'product_detail'
   | 'product_sales_report'
+  | 'orders_by_city_report'
+  | 'order_status_summary'
+  | 'payment_method_summary'
+  | 'average_order_value'
+  | 'sales_comparison'
+  | 'products_not_selling'
+  | 'low_stock_high_sales'
 
 export type DetectedIntent = {
   intent: AgentIntent

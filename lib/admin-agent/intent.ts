@@ -61,6 +61,44 @@ export const REPORTS_SUGGESTED_QUESTIONS: SuggestedQuestion[] = [
   },
 ]
 
+export const BUSINESS_REPORTS_SUGGESTED_QUESTIONS: SuggestedQuestion[] = [
+  {
+    label: 'City-wise Orders',
+    question: 'Which city has most orders this month?',
+    intent: 'orders_by_city_report',
+  },
+  {
+    label: 'Status Summary',
+    question: 'Show order status summary this month',
+    intent: 'order_status_summary',
+  },
+  {
+    label: 'Payment Methods',
+    question: 'Show payment method summary this month',
+    intent: 'payment_method_summary',
+  },
+  {
+    label: 'Average Order Value',
+    question: 'What is average order value this month?',
+    intent: 'average_order_value',
+  },
+  {
+    label: 'Sales Comparison',
+    question: 'Compare this week and last week sales',
+    intent: 'sales_comparison',
+  },
+  {
+    label: 'Products Not Selling',
+    question: 'Which products are not selling this month?',
+    intent: 'products_not_selling',
+  },
+  {
+    label: 'Restock Priority',
+    question: 'Which products need restock urgently?',
+    intent: 'low_stock_high_sales',
+  },
+]
+
 /** @deprecated Use QUICK_SUGGESTED_QUESTIONS */
 export const SUGGESTED_QUESTIONS = QUICK_SUGGESTED_QUESTIONS
 

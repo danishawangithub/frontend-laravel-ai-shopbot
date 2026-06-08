@@ -262,6 +262,47 @@ function formatCustomerOrderLookup(data: unknown): string {
   return 'Could not load customer orders.'
 }
 
+function formatBiReport(title: string, data: unknown, empty: string): string {
+  const rows = asArray(data)
+  if (rows.length) {
+    const lines = rows.slice(0, 8).map((row) => {
+      const label =
+        pickStr(row, ['city', 'name', 'title', 'status', 'payment_method', 'method', 'product_name']) ??
+        pickStr(row, ['id']) ??
+        'Item'
+      const count = row.count ?? row.orders_count ?? row.order_count ?? row.quantity
+      const total = formatPkr(row.total ?? row.revenue ?? row.sales ?? row.amount)
+      const parts = [label]
+      if (count != null) parts.push(`count: ${count}`)
+      if (total !== '—') parts.push(total)
+      return `  • ${parts.join(' — ')}`
+    })
+    const more = rows.length > 8 ? `\n  …and ${rows.length - 8} more` : ''
+    return `${title}\n${lines.join('\n')}${more}`
+  }
+
+  const d = asRecord(data)
+  if (!Object.keys(d).length) return `${title}\n${empty}`
+
+  const lines = [title]
+  const aov = d.average_order_value ?? d.aov ?? d.avg_order_value
+  if (aov != null) lines.push(`Average order value: ${formatPkr(aov)}`)
+  const topCity = pickStr(d, ['top_city', 'city'])
+  if (topCity) lines.push(`Top city: ${topCity}`)
+  const change = d.change_percent ?? d.percent_change ?? d.growth_percent
+  if (change != null) lines.push(`Change: ${change}%`)
+  const current = formatPkr(d.current_sales ?? d.current_total ?? d.current)
+  const previous = formatPkr(d.previous_sales ?? d.previous_total ?? d.previous)
+  if (current !== '—') lines.push(`Current period: ${current}`)
+  if (previous !== '—') lines.push(`Previous period: ${previous}`)
+  if (lines.length === 1) {
+    for (const [k, v] of Object.entries(d).slice(0, 8)) {
+      if (v != null && typeof v !== 'object') lines.push(`${k}: ${v}`)
+    }
+  }
+  return lines.join('\n')
+}
+
 /** Local dev reply without calling Groq/OpenAI. */
 export function createMockAiReply(intent: AgentIntent, apiData: unknown): string {
   const tag = '_(Mock AI — Laravel data only.)_\n\n'
@@ -314,6 +355,27 @@ export function createMockAiReply(intent: AgentIntent, apiData: unknown): string
 
     case 'product_sales_report':
       return `${tag}${formatProductsList('Best selling products', apiData, 'No product sales data.')}`
+
+    case 'orders_by_city_report':
+      return `${tag}${formatBiReport('Orders by city', apiData, 'No city order data.')}`
+
+    case 'order_status_summary':
+      return `${tag}${formatBiReport('Order status summary', apiData, 'No status summary data.')}`
+
+    case 'payment_method_summary':
+      return `${tag}${formatBiReport('Payment method summary', apiData, 'No payment method data.')}`
+
+    case 'average_order_value':
+      return `${tag}${formatBiReport('Average order value', apiData, 'No AOV data.')}`
+
+    case 'sales_comparison':
+      return `${tag}${formatBiReport('Sales comparison', apiData, 'No comparison data.')}`
+
+    case 'products_not_selling':
+      return `${tag}${formatProductsList('Products not selling', apiData, 'No unsold products found.')}`
+
+    case 'low_stock_high_sales':
+      return `${tag}${formatProductsList('Restock priority (low stock, high sales)', apiData, 'No restock priority data.')}`
 
     case 'latest_customers':
       return `${tag}${formatCustomersList(apiData, 'Latest customers')}`
