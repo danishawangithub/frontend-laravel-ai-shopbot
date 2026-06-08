@@ -57,7 +57,7 @@ function getOpenAiClient(): OpenAI {
       'OPENAI_API_KEY is not configured on the server. Add it to .env.local or set USE_MOCK_AI=true.'  
     )
   }
-  return new OpenAI({ apiKey })
+  return new OpenAI({ apiKey })  
 }
 
 async function chatComplete(
