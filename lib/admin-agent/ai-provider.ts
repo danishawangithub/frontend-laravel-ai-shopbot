@@ -60,7 +60,7 @@ function getOpenAiClient(): OpenAI {
   return new OpenAI({ apiKey })  
 }
 
-async function chatComplete(
+async function chatComplete(  
   client: OpenAI,
   model: string,
   systemPrompt: string,
