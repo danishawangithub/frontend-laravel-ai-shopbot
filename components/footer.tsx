@@ -92,6 +92,11 @@ export default function Footer() {
                   FAQs
                 </Link>
               </li>
+              <li>
+                <Link href="/help/ai-assistant" className="hover:opacity-100 opacity-80 transition">
+                  Customer Help Assistant
+                </Link>
+              </li>
             </ul>
           </div>
 
